@@ -1,0 +1,7 @@
+# Node modules
+node_modules/
+@cds-models
+
+# Environment variables
+.env
+.env.example
