@@ -11,6 +11,11 @@ import logger from '../utils/logger.js';
 
 
 
+/**
+ * Builds the rendering context for templates based on user input.
+ * @param {Object} input - Validated request body
+ * @returns {Object} Rendering context with derived properties
+ */
 function buildContext(input) {
   const projectNameBase = path.basename(input.projectName);
   const appId = projectNameBase.replace(/-/g, '').toLowerCase();
@@ -30,6 +35,14 @@ function buildContext(input) {
   };
 }
 
+/**
+ * Processes a template file, renders it with Mustache, and writes it to disk.
+ * @param {string} targetDir - Root directory of the new project
+ * @param {string} filePath - Relative path to the template file
+ * @param {string} content - Raw template content
+ * @param {Object} context - Rendering context
+ * @param {Object} [fileMap] - Optional map to collect rendered content for remote response
+ */
 async function writeTemplateFile(targetDir, filePath, content, context, fileMap) {
   const renderedContent = Mustache.render(content, context);
   const renderedPath = Mustache.render(filePath, context);
@@ -41,6 +54,14 @@ async function writeTemplateFile(targetDir, filePath, content, context, fileMap)
   }
 }
 
+/**
+ * Scaffolds the basic folder and file structure for UI5/CAP projects.
+ * @param {string} targetDir - Root directory of the new project
+ * @param {Object} context - Rendering context
+ * @param {string} jobId - Unique identifier for the job
+ * @param {Object} [fileMap] - Optional map to collect rendered content
+ * @returns {Promise<number>} Number of files created
+ */
 async function scaffoldFileStructure(targetDir, context, jobId, fileMap) {
   pushStep(jobId, { name: 'scaffold-files', status: 'running', message: 'Writing project files' });
 
@@ -103,6 +124,14 @@ async function scaffoldFileStructure(targetDir, context, jobId, fileMap) {
   return fileCount;
 }
 
+/**
+ * Sets up CI/CD pipeline files for the project.
+ * @param {string} targetDir - Root directory of the new project
+ * @param {Object} context - Rendering context
+ * @param {string} provider - CI/CD provider (github, azure-devops, etc.)
+ * @param {string} jobId - Unique identifier for the job
+ * @param {Object} [fileMap] - Optional map to collect rendered content
+ */
 async function setupCiCd(targetDir, context, provider, jobId, fileMap) {
   if (!provider) return;
 
@@ -118,6 +147,12 @@ async function setupCiCd(targetDir, context, provider, jobId, fileMap) {
   pushStep(jobId, { name: 'cicd', status: 'done', message: `${provider} pipeline written at ${template.path}` });
 }
 
+/**
+ * Initialises a local Git repository and creates an initial commit.
+ * @param {string} targetDir - Root directory of the new project
+ * @param {Object} config - Project configuration
+ * @param {string} jobId - Unique identifier for the job
+ */
 async function initGitRepo(targetDir, config, jobId) {
   pushStep(jobId, { name: 'git-init', status: 'running', message: 'Initialising git repository' });
 
@@ -145,6 +180,12 @@ async function initGitRepo(targetDir, config, jobId) {
   }
 }
 
+/**
+ * Main entry point for the scaffolding operation.
+ * Creates a job, executes generation asynchronously, and updates the job store.
+ * @param {Object} input - Validated request body
+ * @returns {Promise<string>} The unique Job ID
+ */
 async function runScaffold(input) {
   const jobId = uuidv4();
   const context = buildContext(input);
