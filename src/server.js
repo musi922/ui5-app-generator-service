@@ -4,8 +4,7 @@ import app from './app.js';
 import logger from './utils/logger.js';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
-await fs.ensureDir('logs');
-await fs.ensureDir('jobs');
+
 
 app.listen(PORT, () => {
   logger.info(`SAP Scaffold Agent running on port ${PORT}`);
