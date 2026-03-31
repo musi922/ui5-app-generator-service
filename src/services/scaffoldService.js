@@ -30,15 +30,18 @@ function buildContext(input) {
   };
 }
 
-async function writeTemplateFile(targetDir, filePath, content, context) {
+async function writeTemplateFile(targetDir, filePath, content, context, fileMap) {
   const renderedContent = Mustache.render(content, context);
   const renderedPath = Mustache.render(filePath, context);
   const absolute = path.join(targetDir, renderedPath);
   await fs.ensureDir(path.dirname(absolute));
   await fs.writeFile(absolute, renderedContent, 'utf8');
+  if (fileMap) {
+    fileMap[renderedPath] = renderedContent;
+  }
 }
 
-async function scaffoldFileStructure(targetDir, context, jobId) {
+async function scaffoldFileStructure(targetDir, context, jobId, fileMap) {
   pushStep(jobId, { name: 'scaffold-files', status: 'running', message: 'Writing project files' });
 
   const scope = context.projectScope || 'both';
@@ -82,7 +85,7 @@ async function scaffoldFileStructure(targetDir, context, jobId) {
         ? `app/${filePath}`
         : filePath;
 
-      await writeTemplateFile(targetDir, targetFilePath, content, context);
+      await writeTemplateFile(targetDir, targetFilePath, content, context, fileMap);
       logger.debug(`Written UI5 file: ${targetFilePath}`, { jobId });
       fileCount++;
     }
@@ -90,7 +93,7 @@ async function scaffoldFileStructure(targetDir, context, jobId) {
 
   if (scope === 'cap' || scope === 'both') {
     for (const [filePath, content] of Object.entries(capTemplates)) {
-      await writeTemplateFile(targetDir, filePath, content, context);
+      await writeTemplateFile(targetDir, filePath, content, context, fileMap);
       logger.debug(`Written CAP file: ${filePath}`, { jobId });
       fileCount++;
     }
@@ -100,7 +103,7 @@ async function scaffoldFileStructure(targetDir, context, jobId) {
   return fileCount;
 }
 
-async function setupCiCd(targetDir, context, provider, jobId) {
+async function setupCiCd(targetDir, context, provider, jobId, fileMap) {
   if (!provider) return;
 
   pushStep(jobId, { name: 'cicd', status: 'running', message: `Setting up CI/CD for ${provider}` });
@@ -111,7 +114,7 @@ async function setupCiCd(targetDir, context, provider, jobId) {
     return;
   }
 
-  await writeTemplateFile(targetDir, template.path, template.content, context);
+  await writeTemplateFile(targetDir, template.path, template.content, context, fileMap);
   pushStep(jobId, { name: 'cicd', status: 'done', message: `${provider} pipeline written at ${template.path}` });
 }
 
@@ -160,8 +163,9 @@ async function runScaffold(input) {
       await fs.ensureDir(targetDir);
       logger.info(`Scaffolding project at: ${targetDir}`, { jobId });
 
-      const fileCount = await scaffoldFileStructure(targetDir, context, jobId);
-      await setupCiCd(targetDir, context, input.ciCdProvider, jobId);
+      const fileMap = {};
+      const fileCount = await scaffoldFileStructure(targetDir, context, jobId, fileMap);
+      await setupCiCd(targetDir, context, input.ciCdProvider, jobId, fileMap);
       await initGitRepo(targetDir, input, jobId);
 
       updateJob(jobId, {
@@ -174,6 +178,7 @@ async function runScaffold(input) {
           ciCdProvider: input.ciCdProvider || null,
           gitInitialised: true,
           gitPushed: !!input.gitRepoUrl,
+          fileMap,
         },
       });
 
@@ -190,4 +195,4 @@ async function runScaffold(input) {
   return jobId;
 }
 
-export { runScaffold };
+export { runScaffold, buildContext, scaffoldFileStructure, setupCiCd, initGitRepo };
