@@ -1,29 +1,29 @@
 const templates = {
   'webapp/index.html': `<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{applicationTitle}}</title>
-  <script
-    id="sap-ui-bootstrap"
-    src="https://ui5.sap.com/resources/sap-ui-core.js"
-    data-sap-ui-theme="{{theme}}"
-    data-sap-ui-resourceroots='{"{{namespace}}.{{appId}}": "./"}'
-    data-sap-ui-compatVersion="edge"
-    data-sap-ui-async="true"
-    data-sap-ui-frameOptions="trusted"
-    data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
-  ></script>
-</head>
-<body class="sapUiBody" id="content">
-  <div
-    data-sap-ui-component
-    data-name="{{namespace}}.{{appId}}"
-    data-id="container"
-    data-settings='{"id": "{{appId}}"}'
-  ></div>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{applicationTitle}}</title>
+    <script
+      id="sap-ui-bootstrap"
+      src="https://sapui5.hana.ondemand.com/resources/sap-ui-core.js"
+      data-sap-ui-theme="{{theme}}"
+      data-sap-ui-resourceroots='{ "{{namespace}}.{{appId}}": "./" }'
+      data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
+      data-sap-ui-compatVersion="edge"
+      data-sap-ui-async="true"
+      data-sap-ui-frameOptions="trusted"
+    ></script>
+  </head>
+  <body class="sapUiBody">
+    <div
+      data-sap-ui-component
+      data-name="{{namespace}}.{{appId}}"
+      data-id="container"
+      data-settings='{ "id": "{{appId}}" }'
+    ></div>
+  </body>
 </html>`,
 
   'webapp/manifest.json': `{
@@ -39,10 +39,10 @@ const templates = {
     }{{#enableOdata}},
     "dataSources": {
       "mainService": {
-        "uri": "{{odataServiceUrl}}",
+        "uri": "{{{odataServiceUrl}}}",
         "type": "OData",
         "settings": {
-          "odataVersion": "2.0"
+          "odataVersion": "4.0"
         }
       }
     }{{/enableOdata}}
@@ -94,29 +94,17 @@ const templates = {
     "routing": {
       "config": {
         "routerClass": "sap.m.routing.Router",
-        "type": "JSON",
         "viewType": "XML",
-        "path": "{{namespace}}.{{appId}}.view",
+        "viewPath": "{{namespace}}.{{appId}}.view",
         "controlId": "app",
         "controlAggregation": "pages",
         "async": true
       },
-      "routes": [
-        {
-          "name": "RouteMainView",
-          "pattern": "",
-          "target": "TargetMainView"
-        }
-      ],
-      "targets": {
-        "TargetMainView": {
-          "id": "MainView",
-          "name": "MainView"
-        }
-      }
+      "routes": [],
+      "targets": {}
     },
     "rootView": {
-      "viewName": "{{namespace}}.{{appId}}.view.App",
+      "viewName": "{{namespace}}.{{appId}}.view.Main",
       "type": "XML",
       "async": true,
       "id": "app"
@@ -125,8 +113,8 @@ const templates = {
 }`,
 
   'webapp/Component.js': `sap.ui.define(
-  ["sap/ui/core/UIComponent", "sap/ui/Device"],
-  function (UIComponent, Device) {
+  ["sap/ui/core/UIComponent", "sap/ui/Device", "./model/models"],
+  function (UIComponent, Device, models) {
     "use strict";
 
     return UIComponent.extend("{{namespace}}.{{appId}}.Component", {
@@ -136,12 +124,17 @@ const templates = {
 
       init: function () {
         UIComponent.prototype.init.apply(this, arguments);
+
+        this.setModel(models.createDeviceModel(), "device");
+
         this.getRouter().initialize();
       },
 
       getContentDensityClass: function () {
         if (!this._sContentDensityClass) {
-          this._sContentDensityClass = Device.support.touch ? "sapUiSizeCozy" : "sapUiSizeCompact";
+          this._sContentDensityClass = Device.support.touch
+            ? "sapUiSizeCozy"
+            : "sapUiSizeCompact";
         }
         return this._sContentDensityClass;
       },
@@ -149,164 +142,196 @@ const templates = {
   }
 );`,
 
-  'webapp/view/App.view.xml': `<mvc:View
-  controllerName="{{namespace}}.{{appId}}.controller.App"
+  'webapp/view/Main.view.xml': `<mvc:View
+  controllerName="{{namespace}}.{{appId}}.controller.Main"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
+  xmlns:f="sap.f"
+  xmlns:layout="sap.ui.layout"
   displayBlock="true"
 >
-  <App id="app" />
+  <App id="app">
+    <pages>
+      <f:DynamicPage
+        id="dynamicPageId"
+        headerExpanded="true"
+        toggleHeaderOnTitleClick="true"
+      >
+        <!-- DynamicPage Title -->
+        <f:title>
+          <f:DynamicPageTitle>
+            <f:heading>
+              <Title text="{i18n>mainViewTitle}" level="H2" />
+            </f:heading>
+          </f:DynamicPageTitle>
+        </f:title>
+
+        <!-- DynamicPage Header -->
+        <f:header>
+          <f:DynamicPageHeader pinnable="true">
+            <layout:HorizontalLayout>
+              <layout:VerticalLayout class="sapUiMediumMarginEnd">
+                <Label text="Search" />
+                <SearchField placeholder="Filter by Name..." search=".onSearch" width="250px" />
+              </layout:VerticalLayout>
+            </layout:HorizontalLayout>
+          </f:DynamicPageHeader>
+        </f:header>
+
+        <!-- DynamicPage Content -->
+        <f:content>
+          <Table
+            id="mainTable"
+            inset="false"
+            items="{/Data}"
+            class="sapFDynamicPageAlignContent"
+            width="auto"
+          >
+            <headerToolbar>
+              <OverflowToolbar>
+                <Title text="Items" level="H2" />
+                <ToolbarSpacer />
+                <Button icon="sap-icon://add" text="Add Output" press=".onAddPress" />
+                <Button icon="sap-icon://sort" press=".onSortPress" />
+              </OverflowToolbar>
+            </headerToolbar>
+            <columns>
+              <Column>
+                <Text text="ID" />
+              </Column>
+              <Column>
+                <Text text="Name" />
+              </Column>
+              <Column>
+                <Text text="Description" />
+              </Column>
+              <Column>
+                <Text text="Status" />
+              </Column>
+            </columns>
+            <items>
+              <ColumnListItem>
+                <cells>
+                  <Text text="{ID}" />
+                  <Text text="{Name}" />
+                  <Text text="{Description}" />
+                  <ObjectStatus text="{Status}" state="{= \${Status} === 'Active' ? 'Success' : 'Warning' }" />
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </f:content>
+      </f:DynamicPage>
+    </pages>
+  </App>
 </mvc:View>`,
-
-  'webapp/view/MainView.view.xml': `<mvc:View
-  controllerName="{{namespace}}.{{appId}}.controller.MainView"
-  xmlns:mvc="sap.ui.core.mvc"
-  xmlns="sap.m"
-  xmlns:l="sap.ui.layout"
->
-  <Page
-    id="mainPage"
-    title="{i18n>mainViewTitle}"
-    showNavButton="false"
-  >
-    <content>
-      <VBox class="sapUiMediumMargin">
-        <Title
-          text="{i18n>welcomeTitle}"
-          level="H1"
-        />
-        <Text text="{i18n>welcomeDescription}" />
-      </VBox>
-    </content>
-  </Page>
-</mvc:View>`,
-
-  'webapp/controller/App.controller.js': `sap.ui.define(
-  ["./BaseController"],
-  function (BaseController) {
-    "use strict";
-
-    return BaseController.extend("{{namespace}}.{{appId}}.controller.App", {
-      onInit: function () {},
-    });
-  }
-);`,
 
   'webapp/controller/BaseController.js': `sap.ui.define(
-  ["sap/ui/core/mvc/Controller", "sap/ui/core/routing/History"],
-  function (Controller, History) {
-    "use strict";
+    ["sap/ui/core/mvc/Controller", "sap/ui/core/routing/History"],
+    function (Controller, History) {
+      "use strict";
 
-    return Controller.extend("{{namespace}}.{{appId}}.controller.BaseController", {
-      getRouter: function () {
-        return this.getOwnerComponent().getRouter();
-      },
+      return Controller.extend("{{namespace}}.{{appId}}.controller.BaseController", {
+        getRouter: function () {
+          return this.getOwnerComponent().getRouter();
+        },
 
-      getModel: function (sName) {
-        return this.getView().getModel(sName) || this.getOwnerComponent().getModel(sName);
-      },
+        getModel: function (sName) {
+          return this.getView().getModel(sName) || this.getOwnerComponent().getModel(sName);
+        },
 
-      setModel: function (oModel, sName) {
-        return this.getView().setModel(oModel, sName);
-      },
+        setModel: function (oModel, sName) {
+          return this.getView().setModel(oModel, sName);
+        },
 
-      getResourceBundle: function () {
-        return this.getOwnerComponent().getModel("i18n").getResourceBundle();
-      },
+        getResourceBundle: function () {
+          return this.getOwnerComponent().getModel("i18n").getResourceBundle();
+        },
 
-      onNavBack: function () {
-        const oHistory = History.getInstance();
-        const sPreviousHash = oHistory.getPreviousHash();
-        if (sPreviousHash !== undefined) {
-          window.history.go(-1);
-        } else {
-          this.getRouter().navTo("RouteMainView", {}, true);
-        }
-      },
-    });
-  }
-);`,
-
-  'webapp/controller/MainView.controller.js': `sap.ui.define(
-  ["./BaseController"],
-  function (BaseController) {
-    "use strict";
-
-    return BaseController.extend("{{namespace}}.{{appId}}.controller.MainView", {
-      onInit: function () {},
-    });
-  }
-);`,
-
-  'webapp/model/formatter.js': `sap.ui.define([], function () {
-  "use strict";
-
-  return {
-    formatDate: function (sDate) {
-      if (!sDate) return "";
-      const oDateFormat = sap.ui.core.format.DateFormat.getDateInstance({
-        pattern: "dd.MM.yyyy",
+        onNavBack: function () {
+          const oHistory = History.getInstance();
+          const sPreviousHash = oHistory.getPreviousHash();
+          if (sPreviousHash !== undefined) {
+            window.history.go(-1);
+          }
+        },
       });
-      return oDateFormat.format(new Date(sDate));
-    },
+    }
+  ); `,
 
-    formatCurrency: function (fValue, sCurrency) {
-      if (!fValue) return "";
-      const oCurrencyFormat = sap.ui.core.format.NumberFormat.getCurrencyInstance();
-      return oCurrencyFormat.format(fValue, sCurrency);
-    },
+  'webapp/controller/Main.controller.js': `sap.ui.define(
+    [
+      "./BaseController",
+      "sap/ui/model/json/JSONModel",
+      "sap/ui/model/Filter",
+      "sap/ui/model/FilterOperator",
+      "sap/m/MessageToast"
+    ],
+    function (BaseController, JSONModel, Filter, FilterOperator, MessageToast) {
+      "use strict";
 
-    statusState: function (sStatus) {
-      const mStateMap = {
-        Success: "Success",
-        Error: "Error",
-        Warning: "Warning",
-      };
-      return mStateMap[sStatus] || "None";
-    },
-  };
-});`,
+      return BaseController.extend("{{namespace}}.{{appId}}.controller.Main", {
+        onInit: function () {
+        },
+
+        onSearch: function (oEvent) {
+          // Add search filter for table
+          const aFilters = [];
+          const sQuery = oEvent.getParameter("query");
+          if (sQuery && sQuery.length > 0) {
+            const filter = new Filter("Name", FilterOperator.Contains, sQuery);
+            aFilters.push(filter);
+          }
+
+          // Update list binding
+          const oTable = this.byId("mainTable");
+          const oBinding = oTable.getBinding("items");
+          oBinding.filter(aFilters, "Application");
+        },
+
+        onAddPress: function () {
+          MessageToast.show("Add action triggered");
+        },
+
+        onSortPress: function () {
+          MessageToast.show("Sort action triggered");
+        }
+      });
+    }
+  ); `,
 
   'webapp/model/models.js': `sap.ui.define(
-  ["sap/ui/model/json/JSONModel", "sap/ui/Device"],
-  function (JSONModel, Device) {
-    "use strict";
+    ["sap/ui/model/json/JSONModel", "sap/ui/Device"],
+    function (JSONModel, Device) {
+      "use strict";
 
-    return {
-      createDeviceModel: function () {
-        const oModel = new JSONModel(Device);
-        oModel.setDefaultBindingMode("OneWay");
-        return oModel;
-      },
-    };
-  }
-);`,
+      return {
+        createDeviceModel: function () {
+          const oModel = new JSONModel(Device);
+          oModel.setDefaultBindingMode("OneWay");
+          return oModel;
+        },
+      };
+    }
+  ); `,
 
   'webapp/i18n/i18n.properties': `# App Descriptor
-appTitle={{applicationTitle}}
-appDescription=An SAP UI5 Application
+appTitle = {{ applicationTitle }}
+appDescription = An SAP UI5 Application
 
 # Main View
-mainViewTitle={{applicationTitle}}
-welcomeTitle=Welcome
-welcomeDescription=This is your SAP UI5 application.
+mainViewTitle = {{ applicationTitle }}
+welcomeTitle = Welcome
+welcomeDescription = This is your SAP UI5 application.
 
 # Common
-okButtonText=OK
-cancelButtonText=Cancel
-saveButtonText=Save`,
-
-  'webapp/css/style.css': `.sapUiSizeCompact .customCompact {
-  font-size: 0.75rem;
-}
-
-.customHighlightRow {
-  background-color: var(--sapHighlightColor);
-}`,
+okButtonText = OK
+cancelButtonText = Cancel
+saveButtonText = Save`,
 
   'ui5.yaml': `specVersion: "3.0"
 metadata:
-  name: {{namespace}}.{{appId}}
+  name: {{ui5ProjectName}}
 type: application
 framework:
   name: OpenUI5
@@ -317,104 +342,106 @@ framework:
     - name: sap.f
     - name: sap.ui.layout
     - name: themelib_sap_horizon
-server:
+{{#enableOdata}}server:
   customMiddleware:
     - name: ui5-middleware-simpleproxy
       mountPath: /sap/opu/odata
       afterMiddleware: compression
       configuration:
-        baseUri: "{{odataServiceUrl}}"`,
+        baseUri: "{{{odataServiceUrl}}}"
+{{/enableOdata}}`,
 
   '.eslintrc.json': `{
   "env": {
     "browser": true,
-    "es2020": true
+      "es2020": true
   },
   "parserOptions": {
     "ecmaVersion": 2020,
-    "sourceType": "module"
+      "sourceType": "module"
   },
-  "plugins": ["ui5-jsdocs", "fiori-custom-controls"],
-  "extends": ["plugin:@ui5/recommended"],
-  "rules": {
+  "plugins": ["ui5"],
+    "extends": ["plugin:ui5/recommended"],
+      "rules": {
     "no-console": "warn",
-    "no-unused-vars": "error",
-    "no-undef": "error",
-    "eqeqeq": ["error", "always"],
-    "curly": "error",
-    "no-var": "error",
-    "prefer-const": "error",
-    "semi": ["error", "always"],
-    "quotes": ["error", "double"],
-    "indent": ["error", 2],
-    "max-len": ["warn", { "code": 120 }],
-    "no-trailing-spaces": "error",
-    "comma-dangle": ["error", "always-multiline"],
-    "object-shorthand": ["error", "always"],
-    "arrow-body-style": ["error", "as-needed"],
-    "prefer-template": "error"
+      "no-unused-vars": "error",
+        "no-undef": "error",
+          "eqeqeq": ["error", "always"],
+            "curly": "error",
+              "no-var": "error",
+                "prefer-const": "error",
+                  "semi": ["error", "always"],
+                    "quotes": ["error", "double"],
+                      "indent": ["error", 2],
+                        "max-len": ["warn", { "code": 120 }],
+                          "no-trailing-spaces": "error",
+                            "comma-dangle": ["error", "always-multiline"],
+                              "object-shorthand": ["error", "always"],
+                                "arrow-body-style": ["error", "as-needed"],
+                                  "prefer-template": "error"
   }
-}`,
+} `,
 
-  '.eslintignore': `node_modules/
-dist/
-resources/
-test-resources/
+  '.eslintignore': `node_modules /
+  dist /
+  resources /
+  test - resources /
 *.min.js`,
 
   '.prettierrc': `{
   "printWidth": 120,
-  "tabWidth": 2,
-  "useTabs": false,
-  "semi": true,
-  "singleQuote": false,
-  "trailingComma": "all",
-  "bracketSpacing": true,
-  "arrowParens": "always"
-}`,
+    "tabWidth": 2,
+      "useTabs": false,
+        "semi": true,
+          "singleQuote": false,
+            "trailingComma": "all",
+              "bracketSpacing": true,
+                "arrowParens": "always"
+} `,
 
-  '.gitignore': `node_modules/
-dist/
+  '.gitignore': `node_modules /
+  dist /
 .DS_Store
-*.local
-*.log
-.env
-/resources
-/test-resources
-/report
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*`,
+  *.local
+  *.log
+    .env
+  / resources
+  / test - resources
+  / report
+npm - debug.log *
+  yarn - debug.log *
+  yarn - error.log * `,
 
   'package.json': `{
-  "name": "{{projectName}}",
-  "version": "1.0.0",
-  "description": "{{applicationTitle}}",
-  "author": "{{authorName}} <{{authorEmail}}>",
-  "license": "UNLICENSED",
-  "private": true,
-  "scripts": {
+  "name": "{{projectNameBase}}",
+    "version": "1.0.0",
+      "description": "{{applicationTitle}}",
+        "author": "{{authorName}} <{{authorEmail}}>",
+          "license": "UNLICENSED",
+            "private": true,
+              "scripts": {
     "start": "ui5 serve",
-    "build": "ui5 build --clean-dest",
-    "lint": "eslint webapp/**/*.js",
-    "lint:fix": "eslint webapp/**/*.js --fix",
-    "test": "ui5 test"
+      "build": "ui5 build --clean-dest",
+        "lint": "eslint webapp/**/*.js",
+          "lint:fix": "eslint webapp/**/*.js --fix",
+            "test": "ui5 test"
   },
   "devDependencies": {
     "@ui5/cli": "^3.0.0",
     "eslint": "^8.57.0",
-    "@ui5/eslint-plugin": "^0.6.0"
+    "eslint-plugin-ui5": "^0.1.0"{{#enableOdata}},
+    "ui5-middleware-simpleproxy": "^0.6.0"{{/enableOdata}}
   }
-}`,
+} `,
 
-  'README.md': `# {{applicationTitle}}
+  'README.md': `# { { applicationTitle } }
 
 An SAP UI5 application scaffolded by the SAP Scaffold Agent.
 
 ## Project Info
 
-| Property | Value |
-|---|---|
+  | Property | Value |
+| ---| ---|
 | Namespace | \`{{namespace}}.{{appId}}\` |
 | Project Type | {{projectType}} |
 | UI5 Version | {{minUI5Version}} |
@@ -424,7 +451,7 @@ An SAP UI5 application scaffolded by the SAP Scaffold Agent.
 
 \`\`\`bash
 npm install
-npm start         # Start development server
+npm start         # Start development server (http://localhost:8080)
 npm run lint      # Run ESLint
 npm run lint:fix  # Auto-fix lint issues
 npm run build     # Build for production
@@ -435,30 +462,35 @@ npm run build     # Build for production
 \`\`\`
 webapp/
 ├── controller/
-│   ├── App.controller.js
-│   ├── BaseController.js
-│   └── MainView.controller.js
+│   ├── BaseController.js       ← Shared helpers (router, model, nav back)
+│   └── Main.controller.js      ← Main page controller
 ├── css/
 │   └── style.css
 ├── i18n/
 │   └── i18n.properties
 ├── model/
-│   ├── formatter.js
-│   └── models.js
+│   └── models.js               ← Device model factory
 ├── view/
-│   ├── App.view.xml
-│   └── MainView.view.xml
-├── Component.js
-├── index.html
-└── manifest.json
+│   └── Main.view.xml           ← Main page view
+├── Component.js                ← UIComponent: sets device model, inits router
+├── index.html                  ← Bootstrap entry point
+└── manifest.json               ← App descriptor (routing, models, i18n)
 \`\`\`
+
+## Key Wiring
+
+| File | Critical value | Why |
+|---|---|---|
+| \`manifest.json\` → \`rootView.id\` | \`"app"\` | Prefix for all control IDs in Main.view.xml |
+| \`manifest.json\` → \`routing.config.controlId\` | \`"app"\` | Must match \`<App id="app">\` in Main.view.xml |
+| \`manifest.json\` → \`routing.config.viewPath\` | \`"{{namespace}}.{{appId}}.view"\` | Key is \`viewPath\`, NOT \`path\` |
+| \`index.html\` → \`data-settings\` | \`{"id": "{{appId}}"}\` | Component instance id, NOT the container div id |
 
 ## Conventions
 
 - Controllers extend \`BaseController\`
 - All text via \`i18n\` model — no hardcoded strings in views
-- Formatters in \`model/formatter.js\`
-- ESLint rules enforced on every commit
+- ESLint + Prettier enforced on every save
 `,
 };
 

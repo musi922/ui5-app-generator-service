@@ -8,12 +8,15 @@ const ScaffoldRequestSchema = z.object({
     .string()
     .min(3)
     .max(64)
-    .regex(/^[a-z][a-z0-9-]*$/, 'projectName must be lowercase kebab-case'),
+    .regex(/^[a-z0-9/.-]*$/, 'projectName must be lowercase kebab-case or a valid path'),
 
   namespace: z
     .string()
     .regex(/^[a-z][a-z0-9.]*$/, 'namespace must be dot-separated lowercase segments')
-    .min(3),
+    .min(3)
+    .default('com'),
+
+  projectScope: z.enum(['ui5', 'cap', 'both']).default('both'),
 
   projectType: ProjectTypeEnum.default('freestyle'),
 
@@ -31,7 +34,7 @@ const ScaffoldRequestSchema = z.object({
 
   ciCdProvider: CiCdProviderEnum.optional(),
 
-  enableOdata: z.boolean().default(true),
+  enableOdata: z.boolean().default(false),
 
   odataServiceUrl: z
     .string()
