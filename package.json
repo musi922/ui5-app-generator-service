@@ -1,7 +1,16 @@
 {
   "name": "moyotech-app-generator",
-  "version": "1.0.2",
-  "description": "SAP UI5 Project Scaffolding Agent",
+  "version": "1.0.3",
+  "description": "SAP UI5 and CAP Project Generator",
+  "homepage": "https://github.com/musi922/ui5-app-generator-service#readme",
+  "bugs": {
+    "url": "https://github.com/musi922/ui5-app-generator-service/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/musi922/ui5-app-generator-service.git"
+  },
+  "license": "UNLICENSED",
   "main": "src/server.js",
   "type": "module",
   "bin": {
