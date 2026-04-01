@@ -101,13 +101,16 @@ async function scaffoldFileStructure(targetDir, context, jobId, fileMap) {
   let fileCount = 0;
 
   if (scope === 'ui5' || scope === 'both') {
-    for (const [filePath, content] of Object.entries(ui5Templates)) {
+    const projectType = context.projectType || 'freestyle';
+    const selectedTemplates = ui5Templates[projectType] || ui5Templates['freestyle'];
+
+    for (const [filePath, content] of Object.entries(selectedTemplates)) {
       const targetFilePath = scope === 'both'
         ? `app/${filePath}`
         : filePath;
 
       await writeTemplateFile(targetDir, targetFilePath, content, context, fileMap);
-      logger.debug(`Written UI5 file: ${targetFilePath}`, { jobId });
+      logger.debug(`Written UI5 file (${projectType}): ${targetFilePath}`, { jobId });
       fileCount++;
     }
   }

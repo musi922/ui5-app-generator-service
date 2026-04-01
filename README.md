@@ -17,6 +17,8 @@ You can also run it instantly anywhere using `npx`:
 npx moyotech-app-generator MyNewApp [options]
 ```
 
+If you don't provide the `--type` option, the generator will guide you through an interactive setup to choose your application template.
+
 ### Example:
 ```bash
 npx moyotech-app-generator my-sap-project --title "My Cool App" --scope both
@@ -28,6 +30,7 @@ npx moyotech-app-generator my-sap-project --title "My Cool App" --scope both
 
 | Option | Description | Default |
 |---|---|---|
+| `--type` | UI5 application type: `freestyle` or `masterdetail` | `freestyle` |
 | `--title` | The title of your application | (Project Name) |
 | `--namespace` | Project namespace (e.g. `com.moyo.demo`) | `com.moyo.demo` |
 | `--scope` | `ui5`, `cap`, or `both` | `both` |

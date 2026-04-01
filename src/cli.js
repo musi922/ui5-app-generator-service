@@ -7,6 +7,18 @@
 
 import path from 'path';
 import fs from 'fs-extra';
+import readline from 'readline';
+
+async function askQuestion(query) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+    return new Promise(resolve => rl.question(query, ans => {
+        rl.close();
+        resolve(ans);
+    }));
+}
 
 async function main() {
     const args = process.argv.slice(2);
@@ -17,20 +29,21 @@ Moyotech App Generator CLI
 Usage:
   moyotech-app-generator <project-name> [options]
 
-Remote Options (Recommended for Clients):
-  --server <url>       URL of the remote generator server
-  --key <key>          API Key for the remote server
+Options:
+  --type <type>        App template: freestyle, masterdetail (default: freestyle)
   --title <title>      Application title
   --namespace <ns>     Project namespace (default: com.moyo.demo)
-
-Local Options (For Developers):
   --scope <scope>      Project scope: ui5, cap, or both (default: both)
   --odata <bool>       Enable OData support (default: true)
   --author <name>      Author name
   --email <email>      Author email
 
-Example Remote:
-  moyotech-app-generator MyProject --server https://api.moyo.com --key secret-123
+Remote Options (Recommended for Clients):
+  --server <url>       URL of the remote generator server
+  --key <key>          API Key for the remote server
+
+Example:
+  moyotech-app-generator MyProject --type masterdetail
     `;
 
     if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
@@ -43,6 +56,7 @@ Example Remote:
         projectName,
         namespace: 'com.moyo.demo',
         projectScope: 'both',
+        projectType: null,
         enableOdata: true,
         applicationTitle: projectName,
         authorName: 'User',
@@ -52,9 +66,10 @@ Example Remote:
         apiKey: null
     };
 
-    // Argument parsing
+
     for (let i = 1; i < args.length; i++) {
         if (args[i] === '--namespace') options.namespace = args[++i];
+        if (args[i] === '--type') options.projectType = args[++i];
         if (args[i] === '--scope') options.projectScope = args[++i];
         if (args[i] === '--odata') options.enableOdata = args[++i] === 'true';
         if (args[i] === '--title') options.applicationTitle = args[++i];
@@ -63,6 +78,20 @@ Example Remote:
         if (args[i] === '--cicd') options.ciCdProvider = args[++i];
         if (args[i] === '--server') options.serverUrl = args[++i];
         if (args[i] === '--key') options.apiKey = args[++i];
+    }
+
+
+    if (!options.projectType) {
+        console.log('\nSelect Application Template:');
+        console.log('1. List Report (Freestyle UI5, Dynamic Page) [Default]');
+        console.log('2. Master-Detail (Freestyle UI5, Flexible Column Layout)');
+
+        const answer = await askQuestion('\nEnter choice (1 or 2): ');
+        if (answer === '2') {
+            options.projectType = 'masterdetail';
+        } else {
+            options.projectType = 'freestyle';
+        }
     }
 
     if (options.serverUrl) {
