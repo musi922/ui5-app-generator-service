@@ -11,15 +11,7 @@ framework:
     - name: sap.ui.core
     - name: sap.f
     - name: sap.ui.layout
-    - name: themelib_sap_horizon
-{{#enableOdata}}server:
-  customMiddleware:
-    - name: ui5-middleware-simpleproxy
-      mountPath: /sap/opu/odata
-      afterMiddleware: compression
-      configuration:
-        baseUri: "{{{odataServiceUrl}}}"
-{{/enableOdata}}`,
+    - name: themelib_sap_horizon`,
 
   '.eslintrc.json': `{
   "env": {
